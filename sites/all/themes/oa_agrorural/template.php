@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/includes/node.inc';
 /**
  * Implements hook_css_alter().
  */
-function oa_agronet_css_alter(&$css) {
+function oa_agrorural_css_alter(&$css) {
   $oa_radix_path = drupal_get_path('theme', 'oa_radix');
 
   // Radix now includes compiled stylesheets for demo purposes.
@@ -26,7 +26,7 @@ function oa_agronet_css_alter(&$css) {
 /**
  * Implements template_preprocess_page().
  */
-function oa_agronet_preprocess_page(&$variables) {
+function oa_agrorural_preprocess_page(&$variables) {
   // Add copyright to theme.
   if ($copyright = theme_get_setting('copyright')) {
     $variables['copyright'] = check_markup($copyright['value'], $copyright['format']);

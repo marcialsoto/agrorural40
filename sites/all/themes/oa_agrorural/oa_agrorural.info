@@ -1,5 +1,5 @@
-name        = oa_agronet
-description = A theme based on Open Atrium Base.
+name        = oa_agrorural
+description = Theme para AGRO RURAL.
 screenshot  = screenshot.png
 core        = 7.x
 
@@ -23,11 +23,10 @@ stylesheets-conditional[IE 7][all][] = assets/stylesheets/ie7.css
 stylesheets-conditional[IE 8][all][] = assets/stylesheets/ie8.css
 
 ; Javascript
-scripts[] = assets/javascripts/script.js
+scripts[] = assets/javascripts/agrorural__script.js
 
 ; Information added by Drupal.org packaging script on 2015-02-23
 version = "7.x-3.10"
 core = "7.x"
 project = "oa_radix"
 datestamp = "1424718335"
-
