@@ -11,6 +11,11 @@ module.exports = function(grunt) {
 						' * <%= pkg.homepageShortened %>' +
 						' */\n\n',
 		uglify: {
+			min: {
+				files: {
+					'respond.min.js': ['src/respond.js']
+				  }
+			},
 			nonMinMatchMedia: {
 				options: {
 					banner: '<%= banner %>',
@@ -87,6 +92,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
 
 	// Default task.
-	grunt.registerTask('default', ['jshint', 'uglify']);
+	grunt.registerTask('default', ['uglify']);
 
 };
