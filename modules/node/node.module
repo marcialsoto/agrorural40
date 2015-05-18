@@ -506,7 +506,8 @@ function node_type_load($name) {
  *   - custom: TRUE or FALSE indicating whether this type is defined by a module
  *     (FALSE) or by a user (TRUE) via Add Content Type.
  *   - modified: TRUE or FALSE indicating whether this type has been modified by
- *     an administrator. Currently not used in any way.
+ *     an administrator. When modifying an existing node type, set to TRUE, or
+ *     the change will be ignored on node_types_rebuild().
  *   - locked: TRUE or FALSE indicating whether the administrator can change the
  *     machine name of this type.
  *   - disabled: TRUE or FALSE indicating whether this type has been disabled.
@@ -739,11 +740,9 @@ function _node_types_build($rebuild = FALSE) {
     $type_db = $type_object->type;
     // Original disabled value.
     $disabled = $type_object->disabled;
-    // Check for node types from disabled modules and mark their types for removal.
-    // Types defined by the node module in the database (rather than by a separate
-    // module using hook_node_info) have a base value of 'node_content'. The isset()
-    // check prevents errors on old (pre-Drupal 7) databases.
-    if (isset($type_object->base) && $type_object->base != 'node_content' && empty($_node_types->types[$type_db])) {
+    // Check for node types either from disabled modules or otherwise not defined
+    // and mark as disabled.
+    if (empty($type_object->custom) && empty($_node_types->types[$type_db])) {
       $type_object->disabled = TRUE;
     }
     if (isset($_node_types->types[$type_db])) {
@@ -1580,9 +1579,7 @@ function node_permission() {
     ),
     'access content overview' => array(
       'title' => t('Access the content overview page'),
-      'description' => user_access('access content overview')
-        ? t('Get an overview of <a href="@url">all content</a>.', array('@url' => url('admin/content')))
-        : t('Get an overview of all content.'),
+      'description' => t('Get an overview of <a href="@url">all content</a>.', array('@url' => url('admin/content'))),
     ),
     'access content' => array(
       'title' => t('View published content'),
@@ -1610,7 +1607,7 @@ function node_permission() {
 }
 
 /**
- * Gathers the rankings from the the hook_ranking() implementations.
+ * Gathers the rankings from the hook_ranking() implementations.
  *
  * @param $query
  *   A query object that has been extended with the Search DB Extender.
@@ -3364,7 +3361,7 @@ function _node_query_node_access_alter($query, $type) {
     return;
   }
 
-  $tables = $query->getTables();
+  $tables = &$query->getTables();
   $base_table = $query->getMetaData('base_table');
   // If no base table is specified explicitly, search for one.
   if (!$base_table) {
@@ -3445,6 +3442,13 @@ function _node_query_node_access_alter($query, $type) {
       $subquery = db_select('node_access', 'na')
        ->fields('na', array('nid'));
 
+      // Increment the placeholder index on the subquery until it matches the
+      // placeholders used by the main query.
+      $np = count($query->getArguments());
+      while ($np--) {
+        $subquery->nextPlaceholder();
+      }
+
       $grant_conditions = node_add_node_grants_to_query($grants, 'na');
 
       // Attach conditions to the subquery for nodes.
@@ -3468,13 +3472,20 @@ function _node_query_node_access_alter($query, $type) {
       // Otherwise attach it to the node query itself.
       else {
         if (empty($tableinfo['join type'])) {
-          // If we are looking at the main table of the query, apply the 
+          // If we are looking at the main table of the query, apply the
           // subquery directly.
           $query->exists($subquery);
-        } else {
+        }
+        else {
           // If we are looking at a joined table, add the node access check
           // to the join condition.
-          $tables[$nalias]['condition'] .= ' AND ' . (string)$subquery;
+          $tables[$nalias]['condition'] .= ' AND EXISTS(' . (string)$subquery . ')';
+          $tables[$nalias]['arguments'] += $subquery->arguments();
+          // Increment the placeholder count on the main query until it matches the placeholders
+          // used by the subquery.
+          foreach ($subquery->arguments() as $_a) {
+            $query->nextPlaceholder();
+          }
         }
       }
     }
